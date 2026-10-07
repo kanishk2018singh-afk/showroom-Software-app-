@@ -3,8 +3,8 @@
 MyBillBook जैसा **showroom billing app** — GST invoice, estimate, barcode billing, stock aur reports.
 पूरा offline चलता है, data आपके phone/browser में ही रहता है (कोई login नहीं, कोई server नहीं)।
 
-यह `webapp/` folder उसी repo की Android app (`app/`) का **web version** है — phone में "Add to Home screen" करके
-native app की तरह install किया जा सकता है।
+इस repo का **root ही पूरा web app** है (Vite + React + TypeScript) — phone में "Add to Home screen" करके
+native app की तरह install किया जा सकता है। (Android/APK वाला हिस्सा अलग repo/folder में रहता है।)
 
 ---
 
@@ -79,7 +79,6 @@ native app की तरह install किया जा सकता है।
 ## 🚀 चलाने का तरीका (development)
 
 ```bash
-cd webapp
 npm install
 npm run dev        # http://localhost:5173
 ```
@@ -111,7 +110,7 @@ npm run build:preview     # dist build karke preview-build/ folder banata hai
 npm run serve:static      # http://localhost:4173  (koi node_modules nahi chahiye)
 ```
 
-Build hone ke baad `webapp/preview-build/` folder kisi bhi static hosting (ya `python3 -m http.server`)
+Build hone ke baad `preview-build/` folder kisi bhi static hosting (ya `python3 -m http.server`)
 se serve ho jata hai — app wahi pura kaam karta hai (offline bhi, kyunki service worker saath aata hai).
 Windows par serve karne ke liye `npx serve preview-build` ya VS Code ka Live Server bhi chalega.
 
@@ -180,7 +179,7 @@ Technical: `src/lib/cloud.ts` (Firebase Auth + Firestore REST, koi SDK nahi — 
 Kuch jagah (preview iframe, purane phone browser, WhatsApp par share) ke liye ek hi file sabse aasan hai:
 
 ```bash
-npm run build:single      # banata hai: webapp/showroom-manager-app.html  (~790 KB)
+npm run build:single      # banata hai: showroom-manager-app.html  (~820 KB)
 ```
 
 Us ek file me **pura app** (JS + CSS) inline hai. Ise:
@@ -205,15 +204,10 @@ Poore billing flow ka automated test hai (jsdom + fake IndexedDB) — isi se dat
 npm run smoke
 ```
 
-Ya `webapp` folder ke andar se:
-
-```bash
-cd webapp
-npm run smoke
-```
-
 Pehli baar chala rahe hain? Kuch aur nahi karna — script khud `npm install` kar leti hai (agar packages nahi mile)
-aur phir 79 checks chalati hai. Typecheck bhi saath chahiye to: `npm run verify`
+aur phir **61 checks** chalati hai: 43 billing-engine checks + 18 UI flow checks (jsdom me asli app khol kar
+onboarding → item → bill → invoice → khata → reports/payments/settings screens tak). Typecheck bhi saath chahiye to:
+`npm run verify`
 
 ### ⚠️ Phir bhi nahi chala? Ye 3 cheezein check karein
 
@@ -221,36 +215,43 @@ aur phir 79 checks chalati hai. Typecheck bhi saath chahiye to: `npm run verify`
 | --- | --- | --- |
 | `npm: command not found` | Node.js install nahi hai | Node 22 install karein: https://nodejs.org (ya `winget install OpenJS.NodeJS` / `brew install node`) |
 | `npm ERR! network` / install fail | internet/proxy ya company firewall | mobile hotspot se try karein, ya `SMOKE_NO_INSTALL=1` ke saath manual `npm install` |
-| `Missing script: "smoke"` | aap purane commit/branch par hain (`main` branch me ye kaam abhi merge nahi hua) | `git fetch && git checkout arena/01a0fba1-showroom-manager1` — ya PR merge karke `main` pull karein |
+| `Missing script: "smoke"` | aap purane commit/branch par hain (jisme app code nahi tha) | `git fetch` karke latest branch pull karein — ya PR merge karke `main` le lein |
 | `Node ... is not supported` | Node purana (20 se kam) | Node 22 install karein |
 
-**Terminal hi nahi chahiye?** App ke andar hi self-test hai: **Settings → 🧪 App self-test** (32 checks, browser me,
-bill banake, payment lekar, purchase karke — aur ant me sab rollback).
+**Terminal hi nahi chahiye?** App ke andar hi self-test hai: **Settings → 🧪 App self-test** (43 checks, browser me,
+bill banake, payment lekar, purchase karke, sync merge tak — aur ant me sab rollback, aapka data safe).
 
 GitHub par har push ke saath ye test apne aap (clean environment me) chalta hai —
 workflow: `.github/workflows/webapp-test.yml` → tab **Actions → Web App Smoke Test** me result dikhta hai.
 
 ### 🧪 App ke andar wala self-test (bina terminal)
-**Settings → 🧪 App self-test** dabayein. Ye usi billing engine ko browser me chalata hai (32 checks:
-GST maths, bill number series, stock kam/zyada, payment, khata balance, purchase payable, credit note,
-CSV, backup, expenses, aging) aur **ant me sab kuch rollback** kar deta hai — aapka asli data bilkul safe.
-
-Ye **72 checks** chalata hai: invoice maths (GST/CGST/SGST/IGST, bill discount, round off), number series,
-stock cut/restore, payment recording, khata balance, credit note, **purchase bill (stock IN + payable)**,
-**payments in/out register**, **expenses**, **udhaar aging**, CSV import/export, backup-restore,
-aur UI flow (home → items → reports → billing → item add → save → invoice view → print → UPI QR → payment →
-More → payments → expenses → reports → purchase bill).
+**Settings → 🧪 App self-test** dabayein. Ye usi billing engine ko browser me chalata hai — **43 checks**:
+invoice maths (GST/CGST/SGST/IGST, bill discount, round off), bill number series, stock cut/restore,
+payment recording, khata balance, credit note, **purchase bill (stock IN + payable)**, **payments in/out register**,
+**expenses**, **udhaar aging**, CSV import/export, backup-restore, users & PIN, multi-company isolation,
+aur **sync merge** (natural key, delete propagation, ID clash). Test ek temporary company (alag database) me
+chalta hai aur **ant me wo database delete** kar deta hai — aapka asli data bilkul safe rehta hai.
 
 ## 🧱 Tech
 Vite + React 19 + TypeScript + Tailwind CSS 4 + Dexie (IndexedDB) + vite-plugin-pwa + qrcode.react + html2canvas-pro
 
 ```
 src/
-  lib/        types, db (Dexie), repo (billing + khata + purchase + expenses + aging), calc (GST maths), format, doc, csv, print
-  components/ UI primitives, InvoicePaper (A4 + thermal), BarcodeScanner, pickers
-  screens/    Home, Billing, InvoiceView, Invoices, Items, Parties, Payments, Expenses, Reports, More, Settings, Onboarding
+  lib/        types, db (Dexie), repo (billing + khata + purchase + expenses + aging), calc (GST maths),
+              format, doc (WhatsApp/UPI), csv, backup, cloud (Firebase REST), sync, keys (natural keys),
+              reports, print, session, selftest  — isi layer me poora business logic hai
+  components/ UI primitives, InvoicePaper (A4 + thermal), BarcodeScanner, ItemPicker/PartyPicker,
+              PeriodPicker, PaymentRegister, Charts, Toasts
+  screens/    Home, Billing, InvoiceView, Invoices, Items, Parties, Payments, Expenses, Reports, More,
+              Settings, Onboarding, Login
+smoke/        automated test (jsdom + fake-indexeddb): engine + UI flow  → npm run smoke
+scripts/      make-single (single-file HTML), make-preview, serve (static server)
 ```
 
 ## 🗄️ Database versions
-- **v1** — business, items, parties, invoices, docSettings, appSettings
-- **v2** — payments (khata in/out), expenses (migrate apne aap hota hai, data safe rehta hai)
+- **v1** — business, items, parties, invoices, payments, expenses, docSettings, appSettings, users
+- **v2** — tombstones (sync me delete propagate karne ke liye, natural key par keyed) + indexes
+  (migrate apne aap hota hai, data safe rehta hai)
+
+Har company ka apna IndexedDB database hota hai (`showroom-db`, `showroom-db-<companyId>`) — isi liye
+ek firm ka data doosri firm me kabhi leak nahi hota.
