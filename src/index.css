@@ -1,0 +1,115 @@
+@import 'tailwindcss';
+
+/* ---------- base ---------- */
+:root {
+  color-scheme: light;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: Inter, 'Noto Sans Devanagari', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  background: #f1f5f9;
+  color: #0f172a;
+  -webkit-tap-highlight-color: transparent;
+}
+
+#root {
+  min-height: 100dvh;
+}
+
+/* number inputs me spinner hata do (billing me galti se value badal jati hai) */
+input[type='number']::-webkit-outer-spin-button,
+input[type='number']::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type='number'] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+/* ---------- utilities ---------- */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  scrollbar-width: none;
+}
+
+.card-shadow {
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06), 0 8px 24px -12px rgba(15, 23, 42, 0.18);
+}
+
+.animate-in {
+  animation: fadeUp 0.18s ease-out;
+}
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* ---------- invoice paper (screen + print) ---------- */
+.invoice-paper {
+  background: #fff;
+  color: #0f172a;
+}
+.invoice-paper.a4 {
+  width: 210mm;
+  min-height: 297mm;
+  padding: 10mm 9mm;
+  font-size: 10.5px;
+}
+.invoice-paper.thermal {
+  width: 80mm;
+  padding: 3mm;
+  font-size: 10px;
+}
+
+/* ---------- print ---------- */
+#print-root {
+  display: none;
+}
+
+@media print {
+  @page {
+    margin: 8mm;
+  }
+
+  body.printing {
+    background: #fff;
+  }
+  body.printing #root {
+    display: none !important;
+  }
+  body.printing #print-root {
+    display: block !important;
+  }
+  body.printing .print-area {
+    width: 100%;
+  }
+  body.printing .print-area.thermal {
+    width: 80mm;
+    margin: 0 auto;
+  }
+  body.printing .no-print {
+    display: none !important;
+  }
+  .invoice-paper {
+    box-shadow: none !important;
+    border: none !important;
+    min-height: auto !important;
+    width: 100% !important;
+    padding: 0 !important;
+  }
+}

@@ -8,6 +8,12 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "typecheck": "tsc --noEmit",
+    "smoke": "node smoke/run.mjs",
+    "verify": "npm run typecheck && npm run smoke",
+    "build:single": "vite build --config vite.config.singlefile.ts && node scripts/make-single.mjs",
+    "build:preview": "npm run build && node scripts/make-preview.mjs",
+    "serve:static": "node scripts/serve.mjs",
     "start": "electron .",
     "electron:build": "vite build && electron-builder"
   },
